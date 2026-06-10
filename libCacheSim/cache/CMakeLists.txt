@@ -42,6 +42,7 @@ set(eviction_sources_c
         eviction/LFUDA.c
         eviction/LIRS.c
         eviction/LRU.c
+        eviction/T3LRU.c
         eviction/LRUProb.c       # a probabilistic version of LRU
         eviction/LRUv0.c         # an inefficient version but easier to understand
         eviction/MRU.c

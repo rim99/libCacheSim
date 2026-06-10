@@ -17,6 +17,11 @@ typedef struct {
   cache_obj_t *q_tail;
 } LRU_params_t;
 
+typedef struct {
+  cache_obj_t *q_head;
+  cache_obj_t *q_tail;
+} T3LRU_params_t;
+
 /* used by LFU related */
 typedef struct freq_node {
   int64_t freq;
@@ -112,6 +117,9 @@ cache_t *LRU_Prob_init(const common_cache_params_t ccache_params,
 
 cache_t *LRU_init(const common_cache_params_t ccache_params,
                   const char *cache_specific_params);
+
+cache_t *T3LRU_init(const common_cache_params_t ccache_params,
+                    const char *cache_specific_params);
 
 cache_t *LRU_K_init(const common_cache_params_t ccache_params,
                     const char *cache_specific_params);
