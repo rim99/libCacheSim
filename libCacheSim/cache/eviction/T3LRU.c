@@ -289,7 +289,9 @@ static void T3LRU_enforce_capacity(cache_t *cache, const request_t *req) {
 /**
  * @brief parse T3LRU-specific parameters from a comma-separated string
  *
- * Supported keys: half-life, tier-ratio (e.g. "4:5:1"),
+ * Supported keys: half-life, tier-ratio (e.g. "1:1" for Cold:Warm),
+ * hot-soft-limit (Hot tier capacity in bytes, overrides tier-ratio for Hot,
+ *   Cold/Warm split remaining equally),
  * hot-threshold, warm-threshold
  *
  * @param cache
@@ -312,21 +314,28 @@ static void T3LRU_parse_params(cache_t *cache, const char *params_str) {
     if (strcasecmp(key, "half-life") == 0) {
       params->half_life_ticks = (uint32_t)strtoul(value, NULL, 0);
     } else if (strcasecmp(key, "tier-ratio") == 0) {
-      /* format: "4:5:1" for Cold:Warm:Hot */
-      int ratios[3] = {0, 0, 0};
+      /* format: "1:1" for Cold:Warm */
+      int ratios[2] = {0, 0};
       char *v = value;
-      for (int i = 0; i < 3 && v != NULL; i++) {
+      for (int i = 0; i < 2 && v != NULL; i++) {
         ratios[i] = (int)strtol(v, NULL, 0);
         v = strchr(v, ':');
         if (v) v++;
       }
-      int sum = ratios[0] + ratios[1] + ratios[2];
+      int sum = ratios[0] + ratios[1];
       if (sum > 0) {
-        for (int i = 0; i < 3; i++) {
-          params->tier_soft_limit[i] =
-              (int64_t)((double)ratios[i] / sum * cache->cache_size);
-        }
+        int64_t rem = cache->cache_size - params->tier_soft_limit[2];
+        params->tier_soft_limit[0] =
+            (int64_t)((double)ratios[0] / sum * rem);
+        params->tier_soft_limit[1] =
+            rem - params->tier_soft_limit[0];
       }
+    } else if (strcasecmp(key, "hot-soft-limit") == 0) {
+      int64_t hot_cap = (int64_t)strtoll(value, NULL, 0);
+      params->tier_soft_limit[2] = hot_cap;
+      int64_t rem = cache->cache_size - hot_cap;
+      params->tier_soft_limit[0] = rem / 2;
+      params->tier_soft_limit[1] = rem - rem / 2;
     } else if (strcasecmp(key, "hot-threshold") == 0) {
       params->hot_threshold = (uint8_t)strtol(value, NULL, 0);
     } else if (strcasecmp(key, "warm-threshold") == 0) {
@@ -349,7 +358,9 @@ static void T3LRU_parse_params(cache_t *cache, const char *params_str) {
  * @param ccache_params some common cache parameters
  * @param cache_specific_params T3LRU specific parameters, supports:
  *  half-life=N (decay half-life in requests, default 1000),
- *  tier-ratio=C:W:H (Cold:Warm:Hot capacity ratio, default 4:5:1),
+ *  tier-ratio=C:W (Cold:Warm capacity ratio, splits remaining after Hot),
+ *  hot-soft-limit=N (Hot tier capacity in bytes, overrides tier-ratio,
+ *    Cold/Warm split remaining, default 50),
  *  hot-threshold=N (usage threshold for Hot tier, default 10),
  *  warm-threshold=N (usage threshold for Warm tier, default 3)
  */
@@ -385,10 +396,12 @@ cache_t *T3LRU_init(const common_cache_params_t ccache_params,
   params->warm_threshold = T3LRU_WARM_THRESHOLD;
   params->half_life_ticks = T3LRU_DEFAULT_HALF_LIFE;
 
-  /* default tier ratios: Cold:Warm:Hot = 4:5:1 */
-  params->tier_soft_limit[0] = (int64_t)(cache->cache_size * 4.0 / 10.0);
-  params->tier_soft_limit[1] = (int64_t)(cache->cache_size * 5.0 / 10.0);
-  params->tier_soft_limit[2] = (int64_t)(cache->cache_size * 1.0 / 10.0);
+  /* default tier limits: Hot fixed at 50 bytes, Cold/Warm split remaining */
+  int64_t hot_capacity = 50;
+  int64_t remaining = cache->cache_size - hot_capacity;
+  params->tier_soft_limit[0] = remaining / 2;
+  params->tier_soft_limit[1] = remaining - remaining / 2;
+  params->tier_soft_limit[2] = hot_capacity;
 
   /* parse user params (may override defaults) */
   if (cache_specific_params != NULL) {
