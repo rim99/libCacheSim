@@ -148,6 +148,12 @@ typedef struct {
   int32_t freq;
 } __attribute__((packed)) Sieve_obj_params_t;
 
+typedef struct {
+  int8_t tier;       /* 0=None, 1=Cold, 2=Warm, 3=Hot */
+  uint8_t usage;     /* 0-15 decay-based heat counter */
+  uint32_t timestamp; /* last decay tick (n_req) */
+} __attribute__((packed)) T3LRU_obj_metadata_t;
+
 // ############################## cache obj ###################################
 struct cache_obj;
 typedef struct cache_obj {
@@ -194,6 +200,7 @@ typedef struct cache_obj {
     Sieve_obj_params_t sieve;
     CAR_obj_metadata_t CAR;
     Clock2QPlus_obj_metadata_t Clock2QPlus;
+    T3LRU_obj_metadata_t T3LRU;
 
 #if defined(ENABLE_GLCACHE) && ENABLE_GLCACHE == 1
     GLCache_obj_metadata_t GLCache;

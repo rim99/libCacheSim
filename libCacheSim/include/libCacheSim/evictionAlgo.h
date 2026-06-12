@@ -17,9 +17,38 @@ typedef struct {
   cache_obj_t *q_tail;
 } LRU_params_t;
 
+/* T3LRU tier IDs */
+#define T3LRU_TIER_NONE 0
+#define T3LRU_TIER_COLD 1
+#define T3LRU_TIER_WARM 2
+#define T3LRU_TIER_HOT  3
+#define T3LRU_N_TIERS   3  /* Cold, Warm, Hot */
+#define T3LRU_DECAY_TABLE_SIZE 16
+#define T3LRU_USAGE_MAX 15
+#define T3LRU_HOT_THRESHOLD 10
+#define T3LRU_WARM_THRESHOLD 3
+#define T3LRU_DEFAULT_HALF_LIFE 1000
+
 typedef struct {
-  cache_obj_t *q_head;
-  cache_obj_t *q_tail;
+  uint32_t threshold;  /* duration threshold in ticks */
+  float decay_ratio;   /* multiplier for usage */
+} T3LRU_decay_entry_t;
+
+typedef struct {
+  /* per-tier doubly linked lists: index 0=Cold, 1=Warm, 2=Hot */
+  cache_obj_t *tier_head[T3LRU_N_TIERS];
+  cache_obj_t *tier_tail[T3LRU_N_TIERS];
+  int64_t tier_n_bytes[T3LRU_N_TIERS];
+  int64_t tier_n_objs[T3LRU_N_TIERS];
+  int64_t tier_soft_limit[T3LRU_N_TIERS]; /* in bytes */
+
+  /* decay table */
+  T3LRU_decay_entry_t decay_table[T3LRU_DECAY_TABLE_SIZE];
+  uint32_t half_life_ticks;
+
+  /* thresholds */
+  uint8_t hot_threshold;
+  uint8_t warm_threshold;
 } T3LRU_params_t;
 
 /* used by LFU related */
