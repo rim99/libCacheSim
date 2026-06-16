@@ -16,6 +16,12 @@ A high-performance library for building and running cache simulations
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/1a1a11a/libCacheSim/badge)](https://scorecard.dev/viewer/?uri=github.com/1a1a11a/libCacheSim)
 
 
+## Customizations
+
+This branch adds a T3LRU (Three-Tier LRU) eviction algorithm simulation in `libCacheSim/cache/eviction/T3LRU.c`. Native C++ implementation: https://github.com/rim99/t3-lru.
+
+---
+
 ## News
 * **2024 Oct**: **S3-FIFO** gets an upgrade! Please try out the new version (the old is now renamed to S3-FIFOv0).
 * **2023 June**: **QDLP** is available now, see [our paper](https://dl.acm.org/doi/10.1145/3593856.3595887) for details.
