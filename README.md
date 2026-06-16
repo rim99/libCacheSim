@@ -18,6 +18,8 @@ A high-performance library for building and running cache simulations
 
 ## Customizations
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20713182.svg)](https://doi.org/10.5281/zenodo.20713182)
+
 This branch adds a T3LRU (Three-Tier LRU) eviction algorithm simulation in `libCacheSim/cache/eviction/T3LRU.c`. Native C++ implementation: https://github.com/rim99/t3-lru.
 
 ---
